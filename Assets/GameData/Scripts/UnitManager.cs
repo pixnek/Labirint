@@ -10,12 +10,15 @@ namespace Labirint
 
         public delegate void AllyChangeStateAction();
         public static AllyChangeStateAction OnAllyChangeState;
+        public delegate void ChangeDistanceEnemyToGamern(float percent);
+        public static ChangeDistanceEnemyToGamern OnChangeDistanceEnemyToGamern;
 
         private static List<IFollower> followers = new List<IFollower>();
         private static List<IFollower> allyFollower = new List<IFollower>();
 
         private static ITargetFollower currentTargetFollower = null;
 
+        private static bool isEnable = true;
         public static int AllyCount
         {
             get
@@ -94,9 +97,35 @@ namespace Labirint
         }
         private void FixedUpdate()
         {
-            foreach(var follower in followers)
+            if (isEnable)
             {
-                follower.TryGoTo(currentTargetFollower);
+                foreach(var follower in followers)
+                {
+                    follower.TryGoTo(currentTargetFollower);
+                }
+                float? percentToGamer = null;
+                foreach(var follower in followers)
+                {
+                    if(follower.GetFollowerType() == FollowerType.Enemy)
+                    {
+                        if(follower.GetState() == FollowerState.HasTarget)
+                        {
+                            float itemPercent = follower.DistanceToTarget / follower.MaxDistanceToTarget;
+                            if(percentToGamer == null)
+                            {
+                                percentToGamer = itemPercent;
+                            }
+                            else
+                            {
+                                if( percentToGamer.Value > itemPercent)
+                                {
+                                    percentToGamer = itemPercent;
+                                }
+                            }
+                        }
+                    }
+                }
+                OnChangeDistanceEnemyToGamern?.Invoke(percentToGamer == null ? -1f : percentToGamer.Value);
             }
         }
         public static void StopAll()
@@ -105,6 +134,7 @@ namespace Labirint
             {
                 follower.StopFollow();
             }
+            isEnable = false;
         }
         private void OnDestroy()
         {

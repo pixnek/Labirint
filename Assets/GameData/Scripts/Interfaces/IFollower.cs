@@ -8,5 +8,7 @@ namespace Labirint
         FollowerState GetState();
         bool TryGoTo(ITargetFollower Target); //Вызывается менеджером каждый FixedUpdate
         void StopFollow();
+        float DistanceToTarget { get; }
+        float MaxDistanceToTarget { get; }
     }
 }

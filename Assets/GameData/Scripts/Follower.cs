@@ -7,24 +7,63 @@ namespace Labirint
     {
         [SerializeField] protected FollowerType type;
         [SerializeField] protected NavMeshAgent currentAgent;
+        [SerializeField] protected float offsetToTarget = 2f;
         [SerializeField] private bool isPatrul;
         [SerializeField] private GameObject patrulPoint1;
         [SerializeField] private GameObject patrulPoint2;
         [SerializeField] private float patrulPointDistance;
-        
+
+        private float maxDistance = 0f;
+
         protected FollowerState currentState;
-        public FollowerState CurrentState
+        public virtual FollowerState CurrentState
         {
             get => currentState;
             set
             {
                 if(currentState != value)
                 {
+                    if (value == FollowerState.HasTarget)
+                    {
+                        if (currentAgent.remainingDistance == float.PositiveInfinity || currentAgent.remainingDistance == float.NegativeInfinity)
+                        {
+                            maxDistance = Vector3.Distance(transform.position, target.CurrentGameObject.transform.position);
+                        }
+                        else
+                        {
+                            maxDistance = currentAgent.remainingDistance;
+                        }
+                    }
                     currentState = value;
                     UnitManager.ChangeState(this, currentState);
                 }
+                else
+                {
+                    if (value == FollowerState.HasTarget)
+                    {
+                        float distance = maxDistance;
+                        if (currentAgent.remainingDistance == float.PositiveInfinity || currentAgent.remainingDistance == float.NegativeInfinity)
+                        {
+                            distance = Vector3.Distance (transform.position, target.CurrentGameObject.transform.position);
+                            
+                        }
+                        else
+                        {
+                            distance = currentAgent.remainingDistance;
+                        }
+                        if (distance > maxDistance)
+                        {
+                            maxDistance = distance;
+                        }
+                    }
+                }
             }
         }
+
+        public float DistanceToTarget => currentAgent.remainingDistance;
+
+        public float MaxDistanceToTarget => maxDistance;
+
         protected ITargetFollower target;
 
         private bool to1Point = true;
@@ -74,15 +113,15 @@ namespace Labirint
                 {
                     to1Point = true;
                     target = Target;
-                    CurrentState = FollowerState.HasTarget;
                     currentAgent.destination = Target.CurrentGameObject.transform.position;
                     currentAgent.isStopped = false;
+                    CurrentState = FollowerState.HasTarget;
                     return true;
                 }
                 else
                 {
-                    CurrentState = FollowerState.Empty;
                     currentAgent.isStopped = true;
+                    CurrentState = FollowerState.Empty;
                     Patrul();
                     return false;
                 }
